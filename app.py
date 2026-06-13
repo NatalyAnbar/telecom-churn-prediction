@@ -1,11 +1,3 @@
-"""
-Churn Prediction - Streamlit Interface
-Run with: streamlit run app.py
-
-Make sure FastAPI is running first:
-uvicorn main:app --reload
-"""
-
 import streamlit as st
 import requests
 
@@ -17,7 +9,7 @@ st.title("📊 Customer Churn Prediction")
 st.write("Enter customer details below to predict churn likelihood.")
 
 # =====================================================================
-# Input fields (matches the Customer model in main.py)
+# Input fields 
 # =====================================================================
 contract = st.selectbox(
     "Contract Type",
@@ -44,6 +36,7 @@ tenure_months = st.number_input("Tenure (Months)", min_value=1, max_value=72, va
 # =====================================================================
 # API connection settings
 # =====================================================================
+
 API_URL = "http://127.0.0.1:8000/predict"
 API_KEY = "churnpredict@123"  # same value as your .env file (apiKey)
 
@@ -52,7 +45,7 @@ API_KEY = "churnpredict@123"  # same value as your .env file (apiKey)
 # =====================================================================
 if st.button("Predict Churn"):
 
-    # Build payload exactly as the Customer model in main.py expects
+    # Build payload exactly as the Customer model in main.py
     payload = {
         "contract": contract,
         "payment_method": payment_method,
