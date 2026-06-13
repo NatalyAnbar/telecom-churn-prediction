@@ -6,10 +6,10 @@ A complete end-to-end machine learning project that analyzes customer behavior a
 
 ## Problem Statement
 
-Customer churn is one of the most expensive problems for subscription-based businesses — acquiring a new customer typically costs far more than retaining an existing one. This project tackles two questions:
+Customer churn is one of the most expensive problems for subscription-based businesses — acquiring a new customer typically costs more than retaining an existing one. This project tackles two questions:
 
-1. **Why** are customers leaving? (diagnostic analysis)
-2. **Who** is likely to leave next, so the business can intervene proactively? (predictive modeling)
+1. Why are customers leaving ? 
+2. Who is likely to leave next ?
 
 The analysis combines transactional data with operational data (complaints and retention offers) to build a fuller picture of the customer journey — not just demographics and billing, but also service quality and retention efforts.
 
@@ -33,7 +33,7 @@ Three datasets were merged on `CustomerID` to enrich the analysis:
 
 ---
 
-## Key Findings (Storytelling)
+## Key Insights
 
 ### 1. Contract type is the single strongest churn signal
 55% of customers are on **month-to-month** contracts, and they account for the overwhelming majority of churn:
@@ -44,13 +44,13 @@ Three datasets were merged on `CustomerID` to enrich the analysis:
 | One year | ~11% |
 | Two year | ~2% |
 
-Customers without a long-term commitment have almost nothing keeping them — and it shows.
+Customers without a long-term commitment have almost nothing keeping them and it shows.
 
 ### 2. The price difference doesn't justify switching
 Month-to-month customers pay **$66.40/month** on average, only **$5.60 more** than two-year contract customers ($60.87/month). This small gap is likely not enough incentive for customers to commit to longer contracts — despite the dramatic difference in churn rates between these groups.
 
-### 3. Payment method reveals a "commitment" pattern
-**Electronic check** users churn at the highest rate, while customers on **automatic payments** (bank transfer or credit card) are far more loyal:
+### 3. Payment method reveals a commitment pattern
+**Electronic check** users churn at the highest rate, while customers on automatic payments (bank transfer or credit card) are far more loyal:
 
 | Payment Method | Share of Customers |
 |---|---|
@@ -62,21 +62,21 @@ Month-to-month customers pay **$66.40/month** on average, only **$5.60 more** th
 Customers who automate their payments appear to be more "set and forget" — and more loyal as a result.
 
 ### 4. Fiber optic customers are leaving in large numbers
-44% of customers use **Fiber optic** internet, and this group shows the highest churn risk — likely tied to pricing and service quality issues, not the technology itself.
+44% of customers use Fiber optic internet, and this group shows the highest churn risk — likely tied to pricing and service quality issues, not the technology itself.
 
 ### 5. The highest-risk customer profile
 Combining contract, internet service, and payment method reveals one segment that stands out dramatically:
 
-> **Month-to-month + Fiber optic + Electronic check** customers alone account for **42% of all churned customers** — a single combination representing nearly half of total churn.
+> **Month-to-month + Fiber optic + Electronic check** customers alone account for 42% of all churned customers — a single combination representing nearly half of total churn.
 
 ### 6. Complaints are concentrated — and so is churn
-Month-to-month customers generate **68% of all complaints**, despite being only 55% of the customer base. They also wait roughly **9 days** for issue resolution, compared to **~3 days** for two-year contract customers. Poor support experience compounds the lack of contractual commitment.
+Month-to-month customers generate 68% of all complaints, despite being only 55% of the customer base. They also wait roughly 9 days for issue resolution, compared to ~3 days for two-year contract customers. Poor support experience compounds the lack of contractual commitment.
 
 ### 7. Retention offers aren't reaching the right audience effectively
 73% of customers who *received* a retention offer are on month-to-month contracts — yet this group still has the highest churn rate. Offers are being targeted at the right segment, but **aren't converting** — suggesting the offer type or value may need rethinking.
 
 ### 8. Revenue impact of churn
-Churned customers paid **~$1,500** in total charges on average, versus **~$2,500** for retained customers — confirming that early churn represents significant lost lifetime value per customer.
+Churned customers paid ~$1,500 in total charges on average, versus ~$2,500 for retained customers — confirming that early churn represents significant lost lifetime value per customer.
 
 ---
 
@@ -169,36 +169,53 @@ This alignment between exploratory analysis and model-driven feature importance 
 - **Model persistence**: joblib
 
 ---
-
 ## Project Structure
-
 ```
 ├── Telco_customer_churn.xlsx     # Core customer dataset
 ├── complaints.csv                 # Support ticket data
 ├── offers.csv                     # Retention offer data
-├── churn_prediction.ipynb         # Full analysis notebook (EDA → Modeling → Evaluation)
+├── Analysis.ipynb                 # Full analysis notebook (EDA → Modeling → Evaluation)
 ├── churn_model.pkl                # Trained Random Forest model
 ├── onehot_encoder.pkl             # Fitted OneHotEncoder for categorical features
 ├── scaler.pkl                     # Fitted StandardScaler for numerical features
 ├── label_encoder.pkl              # Fitted LabelEncoder for target variable
+├── main.py                        # FastAPI service for real-time predictions
+├── app.py                         # Streamlit interface for interactive testing
 └── README.md
 ```
-
 ---
 
-## How to Use the Saved Model
+## How to Run the Project
 
-```python
+### 1. FastAPI (prediction service)
+```
+uvicorn main:app --reload
+```
+This starts the API at http://127.0.0.1:8000. Interactive docs (Swagger UI) are available at http://127.0.0.1:8000/docs, where you can test the /predict endpoint directly.
+
+The endpoint expects an API key sent via the X-API-Key header (set in .env, not committed to the repo).
+
+### 2. Streamlit (interactive interface)
+
+In a separate terminal (with FastAPI still running):
+```
+streamlit run app.py
+```
+This opens a browser interface where you can select customer attributes (contract type, payment method, services, charges, tenure) and get a real-time churn prediction.
+
+### 3. Standalone script (model only, no API)
+
+For a quick look at how the saved model and preprocessing objects work together without running a server:
+
+```
 import joblib
 import pandas as pd
 import numpy as np
 
-# Load model and preprocessing objects
 model = joblib.load('churn_model.pkl')
 encoder = joblib.load('onehot_encoder.pkl')
 scaler = joblib.load('scaler.pkl')
 
-# New customer data (raw)
 new_customer = pd.DataFrame({
     'Contract': ['Month-to-month'],
     'Payment Method': ['Electronic check'],
@@ -210,7 +227,6 @@ new_customer = pd.DataFrame({
     'Tenure Months': [5]
 })
 
-# Apply the same preprocessing used during training
 categorical_cols = ['Contract', 'Payment Method', 'Internet Service',
                      'Online Security', 'Online Backup', 'Tech Support']
 encoded = encoder.transform(new_customer[categorical_cols])
@@ -220,16 +236,11 @@ scaled = scaler.transform(new_customer[numerical_cols])
 
 final_input = np.concatenate([encoded, scaled], axis=1)
 
-# Predict
 prediction = model.predict(final_input)
 print("Churn" if prediction[0] == 1 else "No Churn")
 ```
-
 ---
 
 ## Future Improvements
 
-- Deploy the model via a **FastAPI** endpoint for real-time predictions
-- Build a simple dashboard (Streamlit) for business users to explore at-risk customers
-- Experiment with additional features (e.g., service bundling, tenure-to-charges ratio)
-- A/B test the recommended retention strategies against a control group to measure actual impact
+Deploy the FastAPI service and Streamlit app to the cloud (e.g., Render + Streamlit Community Cloud) for public access
